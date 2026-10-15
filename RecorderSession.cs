@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using VTOLAPI;
 using VTOLVRTacviewSPRecorder.Core;
 
 namespace VTOLVRTacviewSPRecorder.Main;
@@ -41,13 +40,11 @@ internal sealed class RecorderSession : IDisposable
 
     public RecorderSession(
         MonoBehaviour coroutineHost,
-        VTScenes scene,
         object scenarioToken,
         string missionName,
         VTMapManager mapManager)
     {
         _coroutineHost = coroutineHost ?? throw new ArgumentNullException(nameof(coroutineHost));
-        Scene = scene;
         ScenarioToken = scenarioToken ?? throw new ArgumentNullException(nameof(scenarioToken));
         MissionName = missionName ?? throw new ArgumentNullException(nameof(missionName));
         _mapManager = mapManager ?? throw new ArgumentNullException(nameof(mapManager));
@@ -63,13 +60,12 @@ internal sealed class RecorderSession : IDisposable
 
     public bool HasFinalizationFailure { get; private set; }
 
-    private VTScenes Scene { get; }
-
     private object ScenarioToken { get; }
 
-    public bool Matches(VTScenes scene, object scenarioToken)
+    public bool Matches(VTMapManager mapManager, object scenarioToken)
     {
-        return Scene == scene && ReferenceEquals(ScenarioToken, scenarioToken);
+        return ReferenceEquals(_mapManager, mapManager)
+            && ReferenceEquals(ScenarioToken, scenarioToken);
     }
 
     public bool TryStart()

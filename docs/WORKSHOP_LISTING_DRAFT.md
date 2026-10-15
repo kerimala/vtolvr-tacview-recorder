@@ -1,7 +1,8 @@
 # Steam Workshop listing
 
 Published publicly on 2026-09-09: [Tacview Singleplayer Recorder](https://steamcommunity.com/sharedfiles/filedetails/?id=3798566504).
-The owner-provided Tacview screenshot is uploaded and VTOLAPI is a required item.
+The owner-provided Tacview screenshot is uploaded. The recorder has no required
+Workshop dependencies.
 Workshop download hash and Mod Manager discovery were verified; a fresh Workshop
 in-game smoke test remains an open beta validation target.
 
@@ -19,7 +20,7 @@ subscribed Workshop DLL hash verified against the GitHub release.
 | Allow Load On Start | `true` |
 | Show On Main Menu | `true` |
 | Tag | `Client Side` only. Do **not** select `Multiplayer Compatible` or `Host Enforced`. |
-| Dependency | VTOLAPI Workshop item `3265689427`; saved and verified on the public page. |
+| Dependency | None. |
 | Thumbnail | **Owner-approved Candidate D.** Use `assets/workshop/thumbnail-512.png` (512 x 512 PNG, SHA-256 `9A09197C535BFD4E916F608181D2DB7178B395E2F4868A738940B946EB4152E2`). It is original and contains no Mod Loader, VTOL VR, Tacview, or Boundless Dynamics logo. |
 | First visibility | `Hidden` (the uploader maps this to Steam private). |
 | Beta visibility | `Public` community beta. |
@@ -45,7 +46,6 @@ Records supported VTOL VR single-player missions as Tacview ACMI 2.2 files for p
 [h2]Requirements[/h2]
 [list]
 [*]VTOL VR Mod Loader
-[*]VTOLAPI (required item; Steam will prompt you to install it)
 [*]Tacview 1.9.5 or newer
 [/list]
 

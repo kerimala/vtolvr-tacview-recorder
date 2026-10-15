@@ -5,9 +5,7 @@
   "PreviewImageUrl": "",
   "Tags": [],
   "PublishFieldId": 0,
-  "DependenciesIds": [
-    3265689427
-  ],
+  "DependenciesIds": [],
   "MetaData": {
     "DllName": "VTOLVRTacviewSPRecorder.dll",
     "AllowLoadOnStart": true,

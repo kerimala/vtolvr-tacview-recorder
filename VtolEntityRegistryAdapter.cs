@@ -51,7 +51,6 @@ internal sealed class VtolEntityRegistryAdapter : IDisposable
         {
             _nextRefreshTime = nowSeconds + RefreshIntervalSeconds;
             AttachTargetManager(TargetManager.instance);
-            TrackPlayerActor();
 
             if (_targetManager != null)
             {
@@ -244,15 +243,6 @@ internal sealed class VtolEntityRegistryAdapter : IDisposable
             _pendingUnregistrations[actor] = new PendingUnregistration(
                 source,
                 Time.realtimeSinceStartupAsDouble + UnregistrationGraceSeconds);
-        }
-    }
-
-    private void TrackPlayerActor()
-    {
-        GameObject playerVehicle = global::VTOLAPI.VTAPI.GetPlayersVehicleGameObject();
-        if (playerVehicle != null)
-        {
-            TrackActor(playerVehicle.GetComponent<Actor>(), true);
         }
     }
 

@@ -463,7 +463,7 @@ public sealed class TacviewCoreTests
     }
 
     [Fact]
-    public void LocalManifestIdentifiesV051CommunityBetaAndRequiredDependency()
+    public void LocalManifestIdentifiesV051CommunityBetaWithoutRuntimeDependencies()
     {
         string repositoryRoot = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
@@ -480,9 +480,7 @@ public sealed class TacviewCoreTests
         Assert.Contains("Community beta", root.GetProperty("Description").GetString());
         Assert.Contains("pooled VTOL VR Bullet", root.GetProperty("Description").GetString());
         Assert.Equal(0, root.GetProperty("PublishFieldId").GetInt32());
-        Assert.Contains(
-            root.GetProperty("DependenciesIds").EnumerateArray(),
-            dependency => dependency.GetInt64() == 3265689427L);
+        Assert.Empty(root.GetProperty("DependenciesIds").EnumerateArray());
         Assert.Equal(
             "VTOLVRTacviewSPRecorder.dll",
             root.GetProperty("MetaData").GetProperty("DllName").GetString());

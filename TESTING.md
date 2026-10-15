@@ -49,8 +49,9 @@ Akutan, early-exit and multiplayer tests remain open coverage targets.
 
 ## Prerequisites
 
-Enable VTOLAPI and this mod. Use Tacview 1.9.5 or newer with Advanced Options
-and Auto Terrain Switch enabled. Restart Tacview after new terrain is generated.
+Enable this mod. VTOLAPI is not required. Use Tacview 1.9.5 or newer with
+Advanced Options and Auto Terrain Switch enabled. Restart Tacview after new
+terrain is generated.
 
 ## Expected evidence
 
@@ -284,7 +285,7 @@ Keep `.tmp` files. A writer/finalization fault intentionally retains them and mu
 
 ## Safe removal
 
-With VTOL VR and the Mod Loader closed, remove exactly the one approved local-mod folder shown above. Do not remove the parent `Mods` folder, VTOLAPI, Workshop content, baseline archive, or recorded ACMI files.
+With VTOL VR and the Mod Loader closed, remove exactly the one approved local-mod folder shown above. Do not remove the parent `Mods` folder, Workshop content, baseline archive, or recorded ACMI files.
 
 With Tacview closed, terrain can be removed separately by deleting only files
 whose names begin with `VTOLVR.` from:

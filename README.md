@@ -44,18 +44,16 @@ also receive the corrected labels. No separate XML installation is needed.
 
 - VTOL VR
 - VTOL VR Mod Loader
-- [VTOLAPI](https://steamcommunity.com/sharedfiles/filedetails/?id=3265689427)
 - Tacview 1.9.5 or newer
 - .NET 8 SDK, only when building from source
 
 ## Download and installation
 
 Subscribe on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3798566504),
-subscribe to the required VTOLAPI item, then refresh the Mod Loader and enable
-both mods for load on start. Disable any older manual recorder copy first.
+then refresh the Mod Loader and enable the recorder for load on start. Disable
+any older manual recorder copy first.
 
 For manual installation, download the ZIP from [GitHub Releases](https://github.com/kerimala/vtolvr-tacview-recorder/releases).
-Install and enable VTOLAPI in the VTOL VR Mod Loader first.
 
 With VTOL VR and the Mod Loader closed, extract the folder
 `VTOLVRTacviewSPRecorder` into your game's `@Mod Loader/Mods/` directory.

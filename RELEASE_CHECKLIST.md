@@ -11,6 +11,13 @@ the mod if the rights holder objects. No further legal approval is pending.
 The original repository remains private. Public source uses a new repository
 with one reviewed initial commit; the old Git history is not made public.
 
+## Next release
+
+- [ ] Remove VTOLAPI from the Workshop item's required items.
+- [ ] Verify a clean install does not download or load VTOLAPI.
+- [ ] Run mission start, reload, normal exit, and multiplayer-suppression smoke
+  tests using the native mission-state monitor.
+
 ## 0.5.0 release checks
 
 - [x] Preserve private Git history and current runtime evidence locally.

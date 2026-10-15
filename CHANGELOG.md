@@ -3,6 +3,14 @@
 This file records intended community-visible changes. It does not mean that a
 version has been published.
 
+## Unreleased
+
+- Removed the runtime dependency on VTOLAPI. Mission start, reload, and exit
+  are now detected by polling VTOL VR's native map/scenario state, so a VTOLAPI
+  startup failure cannot silently prevent ACMI recording.
+- Ownship discovery now uses the native `TargetManager` actor registry and its
+  `Actor.isPlayer` marker.
+
 ## Community beta — 0.5.1-beta.1 (2026-09-13)
 
 - Embedded aircraft-label definitions in the recorder DLL, with automatic
