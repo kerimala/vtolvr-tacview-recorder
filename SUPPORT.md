@@ -60,4 +60,4 @@ single-player scope.
 The older 0.5.1-beta.1 requires VTOLAPI. The 0.5.2 beta
 removes that dependency to address missing recording startup when VTOLAPI fails
 to initialize. Include the exact recorder version in reports. Target Practice
-passed a recording smoke test. Carrier Landing Practice on Akutan remains untested.
+passed a recording smoke test.

@@ -3,8 +3,7 @@
 ## 0.5.2-beta.1 preparation — 2026-10-31
 
 The owner authorized publishing the beta on 2026-11-08 based on the successful
-Target Practice flight on VTOL VR v1.13.4m1. Carrier Landing Practice on Akutan
-remains an open test target.
+Target Practice flight on VTOL VR v1.13.4m1.
 
 - [x] Remove all runtime/build calls and references to VTOLAPI.
 - [x] Use native mission monitoring, early exit finalization, player-actor lookup,

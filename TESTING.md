@@ -43,8 +43,6 @@ Use the local candidate with only one enabled recorder copy. For a clean-install
 check, disable VTOLAPI only when no other enabled mod requires it. Do not remove
 another mod's dependency as part of testing this recorder.
 
-- [ ] Carrier Landing Practice / Akutan: the issue #1 reproduction produces a
-  start log and a finalized ACMI after normal exit, without VTOLAPI loaded.
 - [x] Target Practice / generated map: ownship, AI, weapons, countermeasures,
   and terrain recorded and the ACMI finalized.
 - [ ] Check 0.5.2-beta.1 playback visually in Tacview 1.9.5.

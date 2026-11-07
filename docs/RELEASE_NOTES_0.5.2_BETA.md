@@ -33,7 +33,7 @@ and enable that copy. Disable the subscribed recorder copy first. Test with only
 one recorder enabled. To roll back, remove the candidate copy and re-enable the
 published 0.5.1-beta.1 recorder and its VTOLAPI dependency.
 
-## Validation and remaining coverage
+## Validation
 
 The Core suite covers ACMI writing, terrain, labels, and entity lifecycles. The
 new lifecycle suite runs the actual production lifecycle against simulated game
@@ -50,9 +50,6 @@ On 2026-11-07, VTOL VR v1.13.4m1 loaded the local 0.5.2-beta.1 DLL and
 finalized a 26-minute, 57-second Target Practice recording despite a VTOLAPI
 `GetVehicleEnum()` initialization exception. The ACMI structure and terrain
 cache passed verification. The recorder logged no warnings or errors.
-
-Carrier Landing Practice on Akutan, restart/quickload, interrupted terrain
-export, and multiplayer suppression remain live test targets. See [TESTING.md](../TESTING.md).
 
 Single-player scope, experimental Akutan terrain, sampled gun bullets, and visual
 proxy limitations remain. Sanitize logs and recordings before reporting through

@@ -58,7 +58,7 @@ Records supported VTOL VR single-player missions as Tacview ACMI 2.2 files for p
 [*]Terrain is a locally generated heightfield, not VTOL VR textures or game assets.
 [*]Aircraft and ship shapes are visual proxies.
 [*]After updating, load the mod once and restart Tacview to activate aircraft labels. Existing recordings also benefit.
-[*]0.5.2 finalized a Target Practice recording on VTOL VR 1.13.4m1 despite a VTOLAPI startup error. Carrier Landing Practice on Akutan remains a live test target.
+[*]0.5.2 finalized a Target Practice recording on VTOL VR 1.13.4m1 despite a VTOLAPI startup error.
 [*]Gun bullets follow the real pooled Bullet transform until its lifecycle teardown; they are not an exact round count, hit log, or ballistic replay.
 [*]After a newly generated terrain cache, restart Tacview before opening the finalized ACMI and keep Auto Terrain Switch enabled.
 [/list]

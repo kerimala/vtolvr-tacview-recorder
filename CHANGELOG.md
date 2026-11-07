@@ -24,8 +24,7 @@ version has been published.
   monitoring in [PR #2](https://github.com/kerimala/vtolvr-tacview-recorder/pull/2).
 
 Live validation covered Target Practice on VTOL VR v1.13.4m1. The recorder
-finalized the flight despite a VTOLAPI initialization exception. Carrier Landing
-Practice on Akutan remains a separate live test.
+finalized the flight despite a VTOLAPI initialization exception.
 
 ## Community beta — 0.5.1-beta.1 (2026-09-13)
 
