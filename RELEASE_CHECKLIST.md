@@ -26,10 +26,13 @@ Run `tools\PrepareBeta.ps1` to create only local artifacts under
 Workshop staging with exactly one DLL, and a release ZIP with DLL/manifest plus
 SHA-256 checksums. No game assemblies or generated caches belong in the ZIP.
 
-For this release, remove VTOLAPI from Workshop item
-`3798566504`'s required items, update the description/change note, and verify a
-fresh downloaded installation. The local manifest cannot change Steam's live
-dependency declaration.
+Published on 2026-11-08 as a [GitHub prerelease](https://github.com/kerimala/vtolvr-tacview-recorder/releases/tag/v0.5.2-beta.1)
+and an update to [Workshop item 3798566504](https://steamcommunity.com/sharedfiles/filedetails/?id=3798566504).
+The GitHub ZIP digest matched the local release package. The Steam download
+reported 0.5.2-beta.1 and its DLL matched the locally tested DLL byte for byte.
+The public Workshop description and change note show the new version and the
+Required Items section is empty. GitHub issue #1 was closed as completed and
+PR #2 was closed as superseded, with credit to the reporter.
 
 ## Owner decision — 2026-09-09
 
