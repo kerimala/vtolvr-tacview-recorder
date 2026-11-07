@@ -3,6 +3,30 @@
 This file records intended community-visible changes. It does not mean that a
 version has been published.
 
+## Community beta — 0.5.2-beta.1 (2026-11-08)
+
+- Fix mission startup when VTOLAPI fails to initialize or never emits its scene
+  events ([issue #1](https://github.com/kerimala/vtolvr-tacview-recorder/issues/1)).
+  Native mission-state polling starts recordings, and Unity scene changes plus
+  native mission-exit events finalize them. Native map/scenario identity detects
+  instant restarts even between polls.
+- Remove the VTOLAPI assembly and Workshop-manifest dependency. Ownship discovery
+  uses `FlightSceneManager.playerActor` with the existing actor-registry fallback.
+- Keep monitoring slow loads, report missing readiness, recover from transient
+  check failures, and bound failed session-start retries. Preserve the single-player
+  scene allowlist, multiplayer suppression, and terrain discovery fallback.
+- Add a separate lifecycle suite that compiles the production lifecycle with
+  simulated native boundaries. Game assets and a running game are not required
+  for these tests.
+- Honor `VTOLVRPath` for all game assembly references when building outside the
+  default Steam installation directory.
+- Thanks to **gollth** for investigating the failure and proposing native-state
+  monitoring in [PR #2](https://github.com/kerimala/vtolvr-tacview-recorder/pull/2).
+
+Live validation covered Target Practice on VTOL VR v1.13.4m1. The recorder
+finalized the flight despite a VTOLAPI initialization exception. Carrier Landing
+Practice on Akutan remains a separate live test.
+
 ## Community beta — 0.5.1-beta.1 (2026-09-13)
 
 - Embedded aircraft-label definitions in the recorder DLL, with automatic

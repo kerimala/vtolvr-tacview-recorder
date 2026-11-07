@@ -249,10 +249,10 @@ internal sealed class VtolEntityRegistryAdapter : IDisposable
 
     private void TrackPlayerActor()
     {
-        GameObject playerVehicle = global::VTOLAPI.VTAPI.GetPlayersVehicleGameObject();
-        if (playerVehicle != null)
+        FlightSceneManager manager = FlightSceneManager.instance;
+        if (manager != null)
         {
-            TrackActor(playerVehicle.GetComponent<Actor>(), true);
+            TrackActor(manager.playerActor, true);
         }
     }
 

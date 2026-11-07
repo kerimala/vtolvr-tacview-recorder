@@ -463,7 +463,7 @@ public sealed class TacviewCoreTests
     }
 
     [Fact]
-    public void LocalManifestIdentifiesV051CommunityBetaAndRequiredDependency()
+    public void LocalManifestIdentifiesV052BetaWithoutWorkshopDependencies()
     {
         string repositoryRoot = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
@@ -474,15 +474,13 @@ public sealed class TacviewCoreTests
         JsonElement root = manifest.RootElement;
 
         Assert.Equal(
-            "Tacview Singleplayer Recorder [0.5.1-beta.1]",
+            "Tacview Singleplayer Recorder [0.5.2-beta.1]",
             root.GetProperty("Title").GetString());
         Assert.Contains("terrain", root.GetProperty("Description").GetString(), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Community beta", root.GetProperty("Description").GetString());
         Assert.Contains("pooled VTOL VR Bullet", root.GetProperty("Description").GetString());
         Assert.Equal(0, root.GetProperty("PublishFieldId").GetInt32());
-        Assert.Contains(
-            root.GetProperty("DependenciesIds").EnumerateArray(),
-            dependency => dependency.GetInt64() == 3265689427L);
+        Assert.Empty(root.GetProperty("DependenciesIds").EnumerateArray());
         Assert.Equal(
             "VTOLVRTacviewSPRecorder.dll",
             root.GetProperty("MetaData").GetProperty("DllName").GetString());

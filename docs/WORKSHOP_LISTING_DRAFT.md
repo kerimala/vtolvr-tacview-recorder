@@ -8,18 +8,21 @@ in-game smoke test remains an open beta validation target.
 Updated to **0.5.1-beta.1** on 2026-09-13. Public description/change note and
 subscribed Workshop DLL hash verified against the GitHub release.
 
+**0.5.2-beta.1 update, 2026-11-08.** Retain the thumbnail, visibility, and
+Client Side tag. The recorder's required items should be empty.
+
 ## Uploader fields
 
-| Field | Published value / decision |
+| Field | Release value |
 | --- | --- |
 | Title | `Tacview Singleplayer Recorder` |
-| Upload folder | `artifacts\workshop-staging\VTOLVRTacviewSPRecorder` |
+| Upload folder | `artifacts\beta\0.5.2-beta.1\workshop-staging\VTOLVRTacviewSPRecorder` |
 | Contents | Exactly `VTOLVRTacviewSPRecorder.dll`; no PDB, private `item.json`, game assembly, Tacview model, generated terrain, or recording. |
 | DLL name | `VTOLVRTacviewSPRecorder.dll` |
 | Allow Load On Start | `true` |
 | Show On Main Menu | `true` |
 | Tag | `Client Side` only. Do **not** select `Multiplayer Compatible` or `Host Enforced`. |
-| Dependency | VTOLAPI Workshop item `3265689427`; saved and verified on the public page. |
+| Dependency | None for 0.5.2. |
 | Thumbnail | **Owner-approved Candidate D.** Use `assets/workshop/thumbnail-512.png` (512 x 512 PNG, SHA-256 `9A09197C535BFD4E916F608181D2DB7178B395E2F4868A738940B946EB4152E2`). It is original and contains no Mod Loader, VTOL VR, Tacview, or Boundless Dynamics logo. |
 | First visibility | `Hidden` (the uploader maps this to Steam private). |
 | Beta visibility | `Public` community beta. |
@@ -28,7 +31,7 @@ subscribed Workshop DLL hash verified against the GitHub release.
 ## Workshop description
 
 ```text
-[h1]Tacview Singleplayer Recorder — 0.5.1-beta.1 Community Beta[/h1]
+[h1]Tacview Singleplayer Recorder — 0.5.2-beta.1 Community Beta[/h1]
 
 Records supported VTOL VR single-player missions as Tacview ACMI 2.2 files for post-flight review.
 
@@ -45,17 +48,17 @@ Records supported VTOL VR single-player missions as Tacview ACMI 2.2 files for p
 [h2]Requirements[/h2]
 [list]
 [*]VTOL VR Mod Loader
-[*]VTOLAPI (required item; Steam will prompt you to install it)
 [*]Tacview 1.9.5 or newer
 [/list]
 
 [h2]Important[/h2]
 [list]
 [*]Single-player only. Multiplayer sessions are intentionally not recorded.
+[*]0.5.2 detects missions natively and no longer requires VTOLAPI. Other mods may still need it.
 [*]Terrain is a locally generated heightfield, not VTOL VR textures or game assets.
 [*]Aircraft and ship shapes are visual proxies.
 [*]After updating, load the mod once and restart Tacview to activate aircraft labels. Existing recordings also benefit.
-[*]0.5.1: label definitions checked using two EF-24G recordings; fresh EF-24G gameplay and mod-load integration await community testing.
+[*]0.5.2 finalized a Target Practice recording on VTOL VR 1.13.4m1 despite a VTOLAPI startup error. Carrier Landing Practice on Akutan remains a live test target.
 [*]Gun bullets follow the real pooled Bullet transform until its lifecycle teardown; they are not an exact round count, hit log, or ballistic replay.
 [*]After a newly generated terrain cache, restart Tacview before opening the finalized ACMI and keep Auto Terrain Switch enabled.
 [/list]

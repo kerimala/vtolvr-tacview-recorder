@@ -1,13 +1,11 @@
 {
   "$schema": "https://gitlab.com/vtolvr-mods/ModLoader/-/raw/release/schema.json",
-  "Title": "Tacview Singleplayer Recorder [0.5.1-beta.1]",
+  "Title": "Tacview Singleplayer Recorder [0.5.2-beta.1]",
   "Description": "Community beta for recording VTOL VR single-player missions in Tacview. Captures terrain heightfields, aircraft, weapons, surface units, flares, chaff, and bounded samples from real pooled VTOL VR Bullet transforms. Gun samples are not an exact round count or hit log. Akutan terrain and less common mission paths remain experimental.",
   "PreviewImageUrl": "",
   "Tags": [],
   "PublishFieldId": 0,
-  "DependenciesIds": [
-    3265689427
-  ],
+  "DependenciesIds": [],
   "MetaData": {
     "DllName": "VTOLVRTacviewSPRecorder.dll",
     "AllowLoadOnStart": true,

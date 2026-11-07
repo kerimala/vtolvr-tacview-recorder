@@ -2,24 +2,35 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using VTOLAPI;
 using VTOLVR.Multiplayer;
 
 namespace VTOLVRTacviewSPRecorder.Main;
 
 internal sealed class RecorderLifecycle : IDisposable
 {
-    private const int MissionReadyMaxAttempts = 120;
-    private const float MissionReadyRetrySeconds = 0.25f;
-    // Campaign scenes can advertise scenarioReady before their static Unity
-    // Terrain tiles become active. Keep this bounded and before writer/header
-    // creation: a source which never appears still records cleanly without a
-    // MapId instead of delaying a mission indefinitely.
+    private const float MissionStatePollSeconds = 0.25f;
+    private const int MissionReadyWarningAttempts = 120;
     private const int TerrainDiscoveryMaxAttempts = 20;
+    private const int SessionStartMaxAttempts = 3;
+    private const double SessionStartRetrySeconds = 5.0;
+    private const double LifecycleWarningIntervalSeconds = 10.0;
 
     private readonly MonoBehaviour _coroutineHost;
     private RecorderSession _activeSession;
-    private IEnumerator _missionWaitRoutine;
+    private IEnumerator _missionMonitorRoutine;
+    private FlightSceneManager _flightSceneManager;
+    private VTMapManager _pendingMapManager;
+    private VTScenario _pendingScenario;
+    private string _pendingScene;
+    private VTMapManager _exitingMapManager;
+    private VTScenario _exitingScenario;
+    private bool _missionExiting;
+    private int _missionReadyAttempts;
+    private int _terrainDiscoveryAttempts;
+    private int _sessionStartAttempts;
+    private double _nextSessionStartTime;
+    private double _nextLifecycleWarningTime;
+    private bool _multiplayerSuppressionLogged;
     private bool _eventsSubscribed;
     private bool _disposed;
 
@@ -30,245 +41,340 @@ internal sealed class RecorderLifecycle : IDisposable
 
     public void StartListening()
     {
-        if (_eventsSubscribed)
+        if (_eventsSubscribed || _disposed)
         {
-            Log("Recorder lifecycle subscription ignored: already listening.");
-            return;
-        }
-
-        if (_disposed)
-        {
-            LogWarn("Recorder lifecycle subscription ignored: lifecycle is disposed.");
             return;
         }
 
         SceneManager.activeSceneChanged += OnActiveSceneChanged;
-        global::VTOLAPI.VTAPI.SceneLoaded += OnSceneLoaded;
-        global::VTOLAPI.VTAPI.MissionReloaded += OnMissionReloaded;
         _eventsSubscribed = true;
-
-        ScheduleMissionStart(global::VTOLAPI.VTAPI.currentScene, "initial state");
+        Log("Recorder lifecycle is monitoring native VTOL mission state (VTOLAPI is not required).");
+        _missionMonitorRoutine = MonitorMissionState();
+        _coroutineHost.StartCoroutine(_missionMonitorRoutine);
     }
 
     public void Dispose()
     {
         if (_disposed)
         {
-            Log("Recorder lifecycle dispose ignored: already disposed.");
             return;
         }
 
         _disposed = true;
-
         if (_eventsSubscribed)
         {
             SceneManager.activeSceneChanged -= OnActiveSceneChanged;
-            global::VTOLAPI.VTAPI.SceneLoaded -= OnSceneLoaded;
-            global::VTOLAPI.VTAPI.MissionReloaded -= OnMissionReloaded;
             _eventsSubscribed = false;
         }
 
-        CancelPendingMissionStart("mod unloaded");
-        StopSession("mod unloaded");
+        AttachFlightSceneManager(null);
+        IEnumerator routine = _missionMonitorRoutine;
+        _missionMonitorRoutine = null;
+        if (routine != null)
+        {
+            try
+            {
+                _coroutineHost.StopCoroutine(routine);
+            }
+            catch (Exception ex)
+            {
+                LogWarn($"Failed to stop recorder mission monitor: {ex.Message}");
+            }
+        }
+
+        EndMission("mod unloaded");
+        ClearExitBoundary();
+    }
+
+    private IEnumerator MonitorMissionState()
+    {
+        var pollDelay = new WaitForSecondsRealtime(MissionStatePollSeconds);
+        while (!_disposed && _eventsSubscribed)
+        {
+            try
+            {
+                CheckMissionState();
+            }
+            catch (Exception ex)
+            {
+                // A transient native-state failure must not kill the coroutine.
+                // Stop recording while scope/readiness cannot be established.
+                try
+                {
+                    StopSession("native mission-state check failed");
+                }
+                catch (Exception stopError)
+                {
+                    LogError($"Recorder cleanup after a mission-state failure failed: {stopError.Message}");
+                }
+
+                ResetPendingMission();
+                if (Time.realtimeSinceStartupAsDouble >= _nextLifecycleWarningTime)
+                {
+                    _nextLifecycleWarningTime = Time.realtimeSinceStartupAsDouble + LifecycleWarningIntervalSeconds;
+                    LogWarn($"Recorder mission-state check failed: {ex.GetType().Name}: {ex.Message}. Monitoring will retry.");
+                }
+            }
+
+            yield return pollDelay;
+        }
+
+        _missionMonitorRoutine = null;
+    }
+
+    private void CheckMissionState()
+    {
+        AttachFlightSceneManager(FlightSceneManager.instance);
+        string scene = SceneManager.GetActiveScene().name;
+        if (!IsMissionScene(scene))
+        {
+            if (_pendingScene != null || _activeSession != null || _missionExiting)
+            {
+                StopSession($"left mission scene for {scene}");
+                ResetPendingMission();
+                ClearExitBoundary();
+            }
+            _multiplayerSuppressionLogged = false;
+            return;
+        }
+
+        if (VTOLMPUtils.IsMultiplayer())
+        {
+            StopSession("multiplayer mission detected");
+            ResetPendingMission();
+            if (!_multiplayerSuppressionLogged)
+            {
+                Log("Recorder session start ignored: multiplayer mission.");
+                _multiplayerSuppressionLogged = true;
+            }
+            return;
+        }
+
+        _multiplayerSuppressionLogged = false;
+        VTMapManager mapManager = VTMapManager.fetch;
+        VTScenario scenario = VTScenario.current;
+
+        // OnExitScene fires before native objects are torn down. Do not reopen
+        // the old, still-ready scenario during the exit fade or instant restart.
+        if (_missionExiting)
+        {
+            if (ReferenceEquals(_exitingMapManager, mapManager) &&
+                ReferenceEquals(_exitingScenario, scenario))
+            {
+                return;
+            }
+            ClearExitBoundary();
+        }
+
+        bool missionReady = mapManager != null && mapManager.map != null &&
+            mapManager.scenarioReady && scenario != null && TargetManager.instance != null;
+        if (_activeSession != null &&
+            (!missionReady || !_activeSession.Matches(scene, mapManager, scenario)))
+        {
+            StopSession("native mission changed or became unavailable");
+            ResetPendingMission();
+        }
+
+        if (!string.Equals(_pendingScene, scene, StringComparison.Ordinal) ||
+            !ReferenceEquals(_pendingMapManager, mapManager) ||
+            !ReferenceEquals(_pendingScenario, scenario))
+        {
+            ResetPendingMission();
+            VtolTerrainSourceFactory.ClearMeshCache();
+            _pendingScene = scene;
+            _pendingMapManager = mapManager;
+            _pendingScenario = scenario;
+        }
+
+        if (_activeSession != null)
+        {
+            // A writer fault retains its recoverable .tmp. Wait for a new
+            // mission rather than repeatedly opening files on a failed drive.
+            if (!_activeSession.IsActive)
+            {
+                StopSession("recording faulted");
+                _sessionStartAttempts = SessionStartMaxAttempts;
+            }
+            return;
+        }
+
+        if (!missionReady)
+        {
+            if (++_missionReadyAttempts == MissionReadyWarningAttempts)
+            {
+                LogWarn($"Recorder is still waiting for native mission readiness in {scene} after " +
+                    $"{MissionReadyWarningAttempts * MissionStatePollSeconds:0.#}s " +
+                    $"(map={mapManager != null && mapManager.map != null}, " +
+                    $"scenarioReady={mapManager != null && mapManager.scenarioReady}, " +
+                    $"scenario={scenario != null}, actors={TargetManager.instance != null}). Monitoring continues.");
+            }
+            return;
+        }
+
+        _missionReadyAttempts = 0;
+        if (_sessionStartAttempts >= SessionStartMaxAttempts ||
+            Time.realtimeSinceStartupAsDouble < _nextSessionStartTime)
+        {
+            return;
+        }
+
+        if (!VtolTerrainExporter.IsTerrainSourceAvailable(mapManager, out string terrainSourceError))
+        {
+            if (++_terrainDiscoveryAttempts < TerrainDiscoveryMaxAttempts)
+            {
+                return;
+            }
+            if (_terrainDiscoveryAttempts == TerrainDiscoveryMaxAttempts)
+            {
+                LogWarn($"Tacview terrain source discovery did not complete after " +
+                    $"{TerrainDiscoveryMaxAttempts * MissionStatePollSeconds:0.#}s: {terrainSourceError}. " +
+                    "Recording will start without a MapId if the source remains unsupported.");
+            }
+        }
+
+        _sessionStartAttempts++;
+        if (!StartSession(scene, mapManager, scenario))
+        {
+            _nextSessionStartTime = Time.realtimeSinceStartupAsDouble + SessionStartRetrySeconds;
+            LogWarn(_sessionStartAttempts < SessionStartMaxAttempts
+                ? $"Recorder session start failed; retrying in {SessionStartRetrySeconds:0.#}s " +
+                    $"(attempt {_sessionStartAttempts}/{SessionStartMaxAttempts})."
+                : $"Recorder session start failed after {SessionStartMaxAttempts} attempts. Waiting for a new mission.");
+        }
+    }
+
+    private void AttachFlightSceneManager(FlightSceneManager manager)
+    {
+        if (ReferenceEquals(_flightSceneManager, manager))
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(_flightSceneManager, null))
+        {
+            _flightSceneManager.OnExitScene -= OnNativeMissionExit;
+        }
+        _flightSceneManager = manager;
+        if (manager != null)
+        {
+            manager.OnExitScene += OnNativeMissionExit;
+        }
+    }
+
+    private void OnNativeMissionExit()
+    {
+        _missionExiting = true;
+        _exitingMapManager = VTMapManager.fetch;
+        _exitingScenario = VTScenario.current;
+        EndMission("native mission exit/restart");
     }
 
     private void OnActiveSceneChanged(Scene previous, Scene next)
     {
-        CancelPendingMissionStart($"Unity scene changed to {next.name}");
-        StopSession($"Unity scene changed from {previous.name} to {next.name}");
+        EndMission($"Unity scene changed from {previous.name} to {next.name}");
+        ClearExitBoundary();
     }
 
-    private void OnSceneLoaded(VTScenes scene)
+    private void EndMission(string reason)
     {
-        CancelPendingMissionStart($"VTAPI scene loaded: {scene}");
-
-        if (!IsMissionScene(scene))
-        {
-            StopSession($"left mission scene for {scene}");
-            return;
-        }
-
-        ScheduleMissionStart(scene, $"VTAPI scene loaded: {scene}");
-    }
-
-    private void OnMissionReloaded()
-    {
-        CancelPendingMissionStart("mission reloaded");
-        StopSession("mission reloaded");
-        ScheduleMissionStart(global::VTOLAPI.VTAPI.currentScene, "mission reloaded");
-    }
-
-    private void ScheduleMissionStart(VTScenes scene, string reason)
-    {
-        if (_disposed || !IsMissionScene(scene))
-        {
-            return;
-        }
-
-        CancelPendingMissionStart("new mission start check");
-
-        IEnumerator routine = WaitForReadyMission(scene, reason);
-        _missionWaitRoutine = routine;
-        _coroutineHost.StartCoroutine(routine);
-    }
-
-    private IEnumerator WaitForReadyMission(VTScenes scene, string reason)
-    {
-        var retryDelay = new WaitForSecondsRealtime(MissionReadyRetrySeconds);
-        int terrainDiscoveryAttempts = 0;
-
-        for (int attempt = 1; attempt <= MissionReadyMaxAttempts; attempt++)
-        {
-            if (_disposed || !_eventsSubscribed || global::VTOLAPI.VTAPI.currentScene != scene)
-            {
-                CompleteMissionWait();
-                yield break;
-            }
-
-            if (VTOLMPUtils.IsMultiplayer())
-            {
-                StopSession("multiplayer mission detected");
-                Log("Recorder session start ignored: multiplayer mission.");
-                CompleteMissionWait();
-                yield break;
-            }
-
-            VTMapManager mapManager = VTMapManager.fetch;
-            VTScenario scenario = VTScenario.current;
-
-            if (mapManager != null && mapManager.map != null && mapManager.scenarioReady && scenario != null)
-            {
-                if (VtolTerrainExporter.IsTerrainSourceAvailable(mapManager, out string terrainSourceError))
-                {
-                    StartSession(scene, mapManager, scenario);
-                    CompleteMissionWait();
-                    yield break;
-                }
-
-                terrainDiscoveryAttempts++;
-                if (terrainDiscoveryAttempts >= TerrainDiscoveryMaxAttempts)
-                {
-                    LogWarn(
-                        $"Tacview terrain source discovery did not complete after " +
-                        $"{TerrainDiscoveryMaxAttempts * MissionReadyRetrySeconds:0.#}s: " +
-                        $"{terrainSourceError}. Recording will start without a MapId if the source remains unsupported.");
-                    StartSession(scene, mapManager, scenario);
-                    CompleteMissionWait();
-                    yield break;
-                }
-            }
-
-            yield return retryDelay;
-        }
-
-        LogWarn($"Recorder session start timed out after {MissionReadyMaxAttempts * MissionReadyRetrySeconds:0.#}s: {scene} was not ready ({reason}).");
-        CompleteMissionWait();
-    }
-
-    private void CompleteMissionWait()
-    {
-        _missionWaitRoutine = null;
-    }
-
-    private void CancelPendingMissionStart(string reason)
-    {
-        IEnumerator routine = _missionWaitRoutine;
-        _missionWaitRoutine = null;
-
-        if (routine == null)
-        {
-            return;
-        }
-
         try
         {
-            _coroutineHost.StopCoroutine(routine);
+            StopSession(reason);
         }
         catch (Exception ex)
         {
-            LogWarn($"Failed to stop pending recorder coroutine ({reason}): {ex.Message}");
-        }
-
-        Log($"Pending recorder session start cancelled ({reason}).");
-    }
-
-    private void StartSession(VTScenes scene, VTMapManager mapManager, VTScenario scenario)
-    {
-        if (_activeSession != null)
-        {
-            if (_activeSession.Matches(scene, scenario))
-            {
-                Log($"Recorder session start ignored: '{_activeSession.MissionName}' is already active.");
-                return;
-            }
-
-            StopSession("mission changed");
-        }
-
-        string missionName = GetMissionName(scenario);
-        var session = new RecorderSession(_coroutineHost, scene, scenario, missionName, mapManager);
-
-        bool started;
-        try
-        {
-            started = session.TryStart();
+            // Do not propagate recorder cleanup failures into the game's exit
+            // callbacks or prevent other native event subscribers from running.
+            LogError($"Recorder mission cleanup failed ({reason}): {ex}");
         }
         finally
         {
-            // TryStart hands a successful source to the session-owned exporter.
-            // On failure nothing should retain the 1.15M-triangle factory
-            // snapshot. Either way the static handoff cache is no longer needed.
-            VtolTerrainSourceFactory.ClearMeshCache();
+            ResetPendingMission();
         }
+    }
 
-        if (!started)
+    private void ClearExitBoundary()
+    {
+        _missionExiting = false;
+        _exitingMapManager = null;
+        _exitingScenario = null;
+    }
+
+    private void ResetPendingMission()
+    {
+        _pendingScene = null;
+        _pendingMapManager = null;
+        _pendingScenario = null;
+        _missionReadyAttempts = 0;
+        _terrainDiscoveryAttempts = 0;
+        _sessionStartAttempts = 0;
+        _nextSessionStartTime = 0;
+    }
+
+    private bool StartSession(string scene, VTMapManager mapManager, VTScenario scenario)
+    {
+        var session = new RecorderSession(_coroutineHost, scene, scenario, GetMissionName(scenario), mapManager);
+        bool started = false;
+        try
         {
-            session.Dispose();
-            LogError($"Recorder session could not start: '{missionName}'.");
-            return;
+            started = session.TryStart();
+            if (started)
+            {
+                _activeSession = session;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Recorder session could not start: '{session.MissionName}': {ex}");
+        }
+        finally
+        {
+            VtolTerrainSourceFactory.ClearMeshCache();
+            if (!started)
+            {
+                session.Dispose();
+            }
         }
 
-        _activeSession = session;
-        Log($"Recorder session started: '{missionName}' ({scene}), output '{session.OutputPath}'.");
+        if (started)
+        {
+            Log($"Recorder session started: '{session.MissionName}' ({scene}), output '{session.OutputPath}'.");
+        }
+        return started;
     }
 
     private void StopSession(string reason)
     {
         VtolTerrainSourceFactory.ClearMeshCache();
-        if (_activeSession == null)
-        {
-            Log($"Recorder session stop ignored: no active session ({reason}).");
-            return;
-        }
-
         RecorderSession session = _activeSession;
         _activeSession = null;
-
-        if (!session.TryStop())
+        if (session == null)
         {
-            Log($"Recorder session stop ignored: '{session.MissionName}' is already stopped ({reason}).");
-            session.Dispose();
             return;
         }
 
-        if (session.HasFinalizationFailure)
+        try
         {
-            LogError($"Recorder session stopped with incomplete ACMI output: '{session.MissionName}' " +
-                $"({reason}), retained temporary path '{session.OutputPath}.tmp'.");
+            bool stopped = session.TryStop();
+            if (session.HasFinalizationFailure)
+            {
+                LogError($"Recorder session stopped with incomplete ACMI output: '{session.MissionName}' " +
+                    $"({reason}), retained temporary path '{session.OutputPath}.tmp'.");
+            }
+            else if (stopped)
+            {
+                Log($"Recorder session stopped: '{session.MissionName}' ({reason}), output '{session.OutputPath}'.");
+            }
         }
-        else
+        finally
         {
-            Log($"Recorder session stopped: '{session.MissionName}' ({reason}), output '{session.OutputPath}'.");
+            session.Dispose();
         }
-
-        session.Dispose();
     }
 
-    private static bool IsMissionScene(VTScenes scene)
+    private static bool IsMissionScene(string scene)
     {
-        return scene == VTScenes.Akutan
-            || scene == VTScenes.CustomMapBase
-            || scene == VTScenes.CustomMapBase_OverCloud;
+        return scene == "Akutan" || scene == "CustomMapBase" || scene == "CustomMapBase_OverCloud";
     }
 
     private static string GetMissionName(VTScenario scenario)
@@ -277,12 +383,6 @@ internal sealed class RecorderLifecycle : IDisposable
         {
             return scenario.scenarioName;
         }
-
-        if (!string.IsNullOrWhiteSpace(scenario.scenarioID))
-        {
-            return scenario.scenarioID;
-        }
-
-        return "unnamed mission";
+        return !string.IsNullOrWhiteSpace(scenario.scenarioID) ? scenario.scenarioID : "unnamed mission";
     }
 }

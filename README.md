@@ -5,13 +5,23 @@ post-flight review.
 
 ## Status
 
-**0.5.1-beta.1 — community beta.** Records single-player flights for Tacview.
+**0.5.2-beta.1 — community beta.** Mission recording now uses native
+Unity/VTOL VR state and no longer depends on VTOLAPI initialization. See the
+[release notes](docs/RELEASE_NOTES_0.5.2_BETA.md).
+
+Target Practice on VTOL VR v1.13.4m1 produced a finalized 26-minute, 57-second
+recording on 2026-11-07 even though VTOLAPI threw during initialization.
 
 A fresh Target Practice flight on VTOL VR v1.12.6m1 was checked on
 2026-09-09: 20 minutes 27 seconds, 234 objects, 120 sampled gun bullets,
 51 chaff releases and 17 flares. The local terrain cache was installed and
 activated, the recording finalized, and the recorder logged no warnings or
 errors. The tester reported that playback worked.
+
+Four later Target Practice recordings on v1.13.4m1 from 2026-09-26 were reviewed
+on 2026-10-31: all four finalized, have monotonic frame times, and have no matching
+temporary file. The log includes unavailable-entity sample warnings. These are
+historical 0.5.1 results, not a gameplay test of the new lifecycle.
 
 Akutan terrain alignment/startup performance, the second cannon family,
 early exit during terrain export, and multiplayer suppression still need
@@ -44,20 +54,17 @@ also receive the corrected labels. No separate XML installation is needed.
 
 - VTOL VR
 - VTOL VR Mod Loader
-- [VTOLAPI](https://steamcommunity.com/sharedfiles/filedetails/?id=3265689427)
 - Tacview 1.9.5 or newer
 - .NET 8 SDK, only when building from source
 
-## Download and installation
+VTOLAPI is optional for this recorder. Other mods may still need it.
 
-Subscribe on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3798566504),
-subscribe to the required VTOLAPI item, then refresh the Mod Loader and enable
-both mods for load on start. Disable any older manual recorder copy first.
+## Installation
 
-For manual installation, download the ZIP from [GitHub Releases](https://github.com/kerimala/vtolvr-tacview-recorder/releases).
-Install and enable VTOLAPI in the VTOL VR Mod Loader first.
+Subscribe via [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3798566504)
+or get the ZIP from [GitHub Releases](https://github.com/kerimala/vtolvr-tacview-recorder/releases).
 
-With VTOL VR and the Mod Loader closed, extract the folder
+For a manual install, close VTOL VR and the Mod Loader and extract the folder
 `VTOLVRTacviewSPRecorder` into your game's `@Mod Loader/Mods/` directory.
 The mod folder contains `VTOLVRTacviewSPRecorder.dll` and `item.json`.
 Do not install both a manual copy and a Workshop copy of this recorder.
@@ -172,6 +179,7 @@ Loader is installed elsewhere, override the matching MSBuild properties.
 ```powershell
 dotnet restore
 dotnet test tests\VTOLVRTacviewSPRecorder.Core.Tests\VTOLVRTacviewSPRecorder.Core.Tests.csproj -c Release
+dotnet test tests\VTOLVRTacviewSPRecorder.Lifecycle.Tests\VTOLVRTacviewSPRecorder.Lifecycle.Tests.csproj -c Release
 dotnet build VTOLVRTacviewSPRecorder.csproj -c Release -p:DeployMod=false
 dotnet msbuild VTOLVRTacviewSPRecorder.csproj -t:CreateTestPackage -p:Configuration=Release -p:DeployMod=false
 ```
@@ -183,6 +191,16 @@ artifacts\test-package\VTOLVRTacviewSPRecorder
 ```
 
 `DeployMod=false` prevents the build from installing the mod automatically.
+
+To prepare the versioned local beta ZIP, private test package, DLL-only Workshop
+staging, and checksums after running both test suites:
+
+```powershell
+.\tools\PrepareBeta.ps1
+```
+
+The outputs are under `artifacts\beta\0.5.2-beta.1\`. The script checks the
+manifest/DLL versions and staging contents, and neither installs nor uploads.
 
 For a future Workshop upload, a separate PDB-free staging folder can be built
 without changing the local installation:
@@ -249,7 +267,7 @@ code and artwork. The owner-approved Candidate D is finalized at
 only the approved artwork is included in the public repository.
 The publication process and draft community materials are in
 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md), [CHANGELOG.md](CHANGELOG.md),
-[docs/RELEASE_NOTES_0.5.0_COMMUNITY_BETA_DRAFT.md](docs/RELEASE_NOTES_0.5.0_COMMUNITY_BETA_DRAFT.md),
+[docs/RELEASE_NOTES_0.5.2_BETA.md](docs/RELEASE_NOTES_0.5.2_BETA.md),
 and [docs/WORKSHOP_LISTING_DRAFT.md](docs/WORKSHOP_LISTING_DRAFT.md). Publication uses a clean initial Git history. No third-party endorsement is claimed.
 
 Community feedback is triaged through the [GitHub issue

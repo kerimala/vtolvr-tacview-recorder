@@ -1,5 +1,36 @@
 # Community-beta release record
 
+## 0.5.2-beta.1 preparation — 2026-10-31
+
+The owner authorized publishing the beta on 2026-11-08 based on the successful
+Target Practice flight on VTOL VR v1.13.4m1. Carrier Landing Practice on Akutan
+remains an open test target.
+
+- [x] Remove all runtime/build calls and references to VTOLAPI.
+- [x] Use native mission monitoring, early exit finalization, player-actor lookup,
+  multiplayer suppression, and bounded failure handling.
+- [x] Run 201 Core + 45 lifecycle tests in both Debug and Release (246 each).
+- [x] Build Debug and Release with zero warnings/errors and `DeployMod=false`.
+- [x] Prepare version metadata, release notes, installation/support documentation,
+  and the future Workshop description for 0.5.2-beta.1.
+- [x] Verify local ZIP, private package, DLL-only staging, metadata and hashes.
+  The ZIP has exactly the DLL and manifest; ZIP bytes match the build/source.
+  The built DLL has no VTOLAPI assembly/member references and retains the
+  original embedded aircraft-label XML. Installed 0.5.1 DLLs are unchanged.
+- [x] Verify Target Practice starts and finalizes despite a VTOLAPI startup exception.
+- [ ] Complete the remaining live gameplay matrix in TESTING.md.
+- [x] Owner authorizes community beta publication.
+
+Run `tools\PrepareBeta.ps1` to create only local artifacts under
+`artifacts\beta\0.5.2-beta.1\`: a private test folder with DLL/manifest/PDB,
+Workshop staging with exactly one DLL, and a release ZIP with DLL/manifest plus
+SHA-256 checksums. No game assemblies or generated caches belong in the ZIP.
+
+For this release, remove VTOLAPI from Workshop item
+`3798566504`'s required items, update the description/change note, and verify a
+fresh downloaded installation. The local manifest cannot change Steam's live
+dependency declaration.
+
 ## Owner decision — 2026-09-09
 
 The owner authorized committing, pushing, a clean public Git history,

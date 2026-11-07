@@ -52,7 +52,12 @@ boundaries.
 
 ## Before reporting a known limitation
 
-Please read the [current beta release notes](docs/RELEASE_NOTES_0.5.0_COMMUNITY_BETA_DRAFT.md),
+Please read the [beta release notes](docs/RELEASE_NOTES_0.5.2_BETA.md),
 especially the notes about local heightfield terrain, visual proxy shapes,
 sampled pooled gun bullets, Tacview restart/Auto Terrain Switch, and
 single-player scope.
+
+The older 0.5.1-beta.1 requires VTOLAPI. The 0.5.2 beta
+removes that dependency to address missing recording startup when VTOLAPI fails
+to initialize. Include the exact recorder version in reports. Target Practice
+passed a recording smoke test. Carrier Landing Practice on Akutan remains untested.

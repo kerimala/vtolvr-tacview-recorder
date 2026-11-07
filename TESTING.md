@@ -1,5 +1,82 @@
 # Community beta validation
 
+## 0.5.2-beta.1 native lifecycle
+
+The recorder uses native Unity/VTOL VR state plus the flight-scene manager's
+exit event. The installed game assemblies are from VTOL VR 1.13.4.
+
+On 2026-11-07, VTOL VR v1.13.4m1 loaded the local 0.5.2-beta.1 DLL with the
+Workshop recorder disabled. VTOLAPI threw a `GetVehicleEnum()` exception during
+startup. Target Practice still produced a finalized 1617.373-second ACMI with
+24,167 monotonic frames, 201 objects, valid object references and a verified
+terrain cache. The recorder logged no warnings or errors.
+
+Automated checks: **201 Core tests and 45 lifecycle tests pass in both Debug
+and Release (246 per configuration)**. Both net472 mod builds have zero warnings
+and errors. Run both projects; the Core suite alone does not test mission startup:
+
+```powershell
+dotnet test tests\VTOLVRTacviewSPRecorder.Core.Tests\VTOLVRTacviewSPRecorder.Core.Tests.csproj -c Release
+dotnet test tests\VTOLVRTacviewSPRecorder.Lifecycle.Tests\VTOLVRTacviewSPRecorder.Lifecycle.Tests.csproj -c Release
+dotnet build VTOLVRTacviewSPRecorder.csproj -c Release -p:DeployMod=false
+.\tools\PrepareBeta.ps1
+```
+
+The lifecycle suite compiles the actual `RecorderLifecycle.cs` with small native
+runtime and session doubles. It exercises the coroutine and event handlers, not
+a second implementation of the lifecycle. The doubles do not simulate Unity's
+full engine, destroyed-object semantics, real terrain, or ACMI finalization.
+Those boundaries still need gameplay checks; the existing Core suite separately
+covers the real file writer and finalization rules.
+
+Coverage includes the three supported mission scenes; mid-mission mod load;
+missing map/scenario/actor readiness; late readiness after 30 seconds; duplicate
+subscription suppression; native exit before destruction; instant restart with
+new scenario identity between polls; map replacement; scene-exit polling fallback;
+multiplayer suppression and transitions; bounded terrain discovery; cache cleanup;
+transient check exceptions and throttled diagnostics; delayed/bounded session-start
+retries; writer-fault retention; native manager replacement; and idempotent unload.
+
+### Remaining gameplay coverage
+
+Use the local candidate with only one enabled recorder copy. For a clean-install
+check, disable VTOLAPI only when no other enabled mod requires it. Do not remove
+another mod's dependency as part of testing this recorder.
+
+- [ ] Carrier Landing Practice / Akutan: the issue #1 reproduction produces a
+  start log and a finalized ACMI after normal exit, without VTOLAPI loaded.
+- [x] Target Practice / generated map: ownship, AI, weapons, countermeasures,
+  and terrain recorded and the ACMI finalized.
+- [ ] Check 0.5.2-beta.1 playback visually in Tacview 1.9.5.
+- [ ] Instant restart and quickload: each mission instance gets a separate file;
+  the previous file is finalized once, with no recording reopened during exit.
+- [ ] Slow loading: the readiness diagnostic is useful and recording starts when ready.
+- [ ] Early exit during terrain discovery/export: no late start; MapId finalization
+  remains safe; recoverable temporary files are retained only on a real fault.
+- [ ] Multiplayer: no session or output is created, including while joining or leaving.
+- [ ] Unload/reload: handlers are removed and a fresh mod load can attach again.
+
+Expected first log: `Recorder lifecycle is monitoring native VTOL mission state
+(VTOLAPI is not required).` Readiness warnings continue monitoring; initialization
+failures retry at five-second intervals, up to three times per mission. A native
+mission-state exception stops an active session while scope is unknown, logs with
+a ten-second throttle, and retries monitoring. A writer fault waits for a new mission.
+
+## Additional historical evidence — 2026-09-26
+
+Reviewed locally on 2026-10-31: the previous Player.log identifies VTOL VR
+v1.13.4m1 and four Target Practice sessions using 0.5.1-beta.1. All four have
+matching finalized ACMI files, monotonic frame timestamps, an active e_coastbay
+MapId, and no matching `.acmi.tmp`. Their durations are 705.386, 293.531, 796.942,
+and 1772.646 seconds. Filenames use UTC 2026-09-25; the local session date is
+2026-09-26 (Europe/Berlin).
+
+The log contains 36 unavailable-entity sample warnings (25 ground, 6 sea,
+4 aircraft, 1 missile) and no recorder error entries. These are historical
+startup/finalization results with VTOLAPI working, not a fresh candidate flight,
+a warning-free run, or a new Tacview visual check. They show that issue #1 is
+not a universal failure of the recorder on game version 1.13.4.
+
 ## 0.5.1-beta.1 aircraft-label test
 
 The DLL embeds the six flyable-aircraft definitions and installs them from
@@ -49,7 +126,8 @@ Akutan, early-exit and multiplayer tests remain open coverage targets.
 
 ## Prerequisites
 
-Enable VTOLAPI and this mod. Use Tacview 1.9.5 or newer with Advanced Options
+Enable the candidate recorder; VTOLAPI is not required by 0.5.2. The published
+0.5.1-beta.1 still needs VTOLAPI. Use Tacview 1.9.5 or newer with Advanced Options
 and Auto Terrain Switch enabled. Restart Tacview after new terrain is generated.
 
 ## Expected evidence
